@@ -1,0 +1,12 @@
+numpy==2.0.2
+matplotlib==3.9.4
+scikit-learn==1.6.1
+pillow==11.3.0
+tensorflow==2.20.0
+keras==3.10.0
+
+# Development dependencies
+black==24.10.0
+flake8==7.1.1
+isort==5.13.2
+pylint==3.3.1

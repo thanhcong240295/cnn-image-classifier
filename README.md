@@ -10,6 +10,12 @@ image-classifier/
 ├── classifier.py           # Core CNN classifier class
 ├── visualization.py        # Plotting and reporting functions
 ├── utils.py               # Utility functions (argument validation, CSV export)
+├── clean.py               # Cleanup script to remove generated files
+├── check_code.py          # Code quality checks (black, flake8, pylint)
+├── format_code.py         # Auto-format code (black, isort)
+├── requirements.txt       # Python dependencies
+├── pyproject.toml         # Tool configurations
+├── .flake8                # Flake8 configuration
 ├── README.md              # Documentation
 ├── dataset/               # Training data (2 subdirectories)
 ├── model/                 # Saved models
@@ -50,7 +56,7 @@ py -3.9 -m venv .venv
 
 # Activate virtual environment
 .venv\Scripts\activate
-
+-r requirements.txt
 # Install dependencies
 pip install numpy matplotlib scikit-learn pillow tensorflow keras
 ```
@@ -179,6 +185,34 @@ python main.py --source dataset --model model/classifier.keras path/to/folder/
 # Load existing model and predict folder
 python main.py --source dataset --model model/classifier.keras --load path/to/folder/ output.csv
 ```
+
+## Cleanup
+
+Remove all generated files (models, results, cache):
+
+```bash
+python clean.py
+```
+
+## Code Quality
+
+### Check code quality (without modifying files):
+```bash
+python check_code.py
+```
+
+This runs:
+- **black** - Code formatter check
+- **isort** - Import sorting check
+- **flake8** - Linting
+- **pylint** - Static analysis
+
+### Auto-format code:
+```bash
+python format_code.py
+```
+
+This automatically formats code with black and isort.
 
 ## Model Architecture
 

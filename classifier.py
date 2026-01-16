@@ -1,15 +1,25 @@
 import os
 import sys
+
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dense, GlobalAveragePooling2D, Dropout, BatchNormalization, RandomFlip, RandomRotation, RandomZoom
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.models import load_model
-from tensorflow.keras.layers import Input
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.layers import (
+    BatchNormalization,
+    Conv2D,
+    Dense,
+    Dropout,
+    GlobalAveragePooling2D,
+    Input,
+    MaxPooling2D,
+    RandomFlip,
+    RandomRotation,
+    RandomZoom,
+)
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.preprocessing.image import img_to_array, load_img
 
 
 class CNNImageClassifier:
@@ -24,16 +34,16 @@ class CNNImageClassifier:
     USE_ROC_AUC = True
     USE_EARLY_STOPPING = True
     EARLY_STOPPING_PATIENCE = 7
-    EARLY_STOPPING_MONITOR = 'val_loss'
+    EARLY_STOPPING_MONITOR = "val_loss"
     EARLY_STOPPING_MIN_DELTA = 0.001
     TRAIN_SPLIT = 0.80
     VAL_SPLIT = 0.20
-    SUPPORTED_IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg')
+    SUPPORTED_IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg")
     RESCALE_FACTOR = 1 / 255
     PREDICTION_THRESHOLD = 0.5
     RANDOM_STATE = 42
     UNCERTAIN_CUTOFF = 0.7
-    
+
     def __init__(self, use_gpu=None, source=None, model_path=None):
         self.model = None
         self.X_train = None
@@ -54,28 +64,28 @@ class CNNImageClassifier:
         else:
             self.model_best_path = None
         self.configure_device()
-    
+
     def configure_device(self):
-        gpus = tf.config.list_physical_devices('GPU')
+        gpus = tf.config.list_physical_devices("GPU")
         if self.use_gpu and gpus:
             try:
                 for gpu in gpus:
                     tf.config.experimental.set_memory_growth(gpu, True)
-                tf.config.set_visible_devices(gpus, 'GPU')
-                self.device = 'GPU'
+                tf.config.set_visible_devices(gpus, "GPU")
+                self.device = "GPU"
             except RuntimeError:
-                self.device = 'CPU'
-                tf.config.set_visible_devices([], 'GPU')
+                self.device = "CPU"
+                tf.config.set_visible_devices([], "GPU")
         else:
-            tf.config.set_visible_devices([], 'GPU')
-            self.device = 'CPU'
-    
+            tf.config.set_visible_devices([], "GPU")
+            self.device = "CPU"
+
     def get_device_info(self):
         return {
-            'device': self.device,
-            'gpu_available': len(tf.config.list_physical_devices('GPU')) > 0,
-            'tensorflow_version': tf.__version__,
-            'cuda_support': tf.test.is_built_with_cuda()
+            "device": self.device,
+            "gpu_available": len(tf.config.list_physical_devices("GPU")) > 0,
+            "tensorflow_version": tf.__version__,
+            "cuda_support": tf.test.is_built_with_cuda(),
         }
 
     def build_model(self):
@@ -85,26 +95,26 @@ class CNNImageClassifier:
             self.model.add(RandomFlip("horizontal"))
             self.model.add(RandomRotation(0.05))
             self.model.add(RandomZoom(0.1))
-        self.model.add(Conv2D(32, (3, 3), padding='same', activation='relu'))
+        self.model.add(Conv2D(32, (3, 3), padding="same", activation="relu"))
         if self.USE_BATCH_NORM:
             self.model.add(BatchNormalization())
         self.model.add(MaxPooling2D(pool_size=(2, 2)))
-        self.model.add(Conv2D(64, (3, 3), padding='same', activation='relu'))
+        self.model.add(Conv2D(64, (3, 3), padding="same", activation="relu"))
         if self.USE_BATCH_NORM:
             self.model.add(BatchNormalization())
         self.model.add(MaxPooling2D(pool_size=(2, 2)))
-        self.model.add(Conv2D(128, (3, 3), padding='same', activation='relu'))
+        self.model.add(Conv2D(128, (3, 3), padding="same", activation="relu"))
         if self.USE_BATCH_NORM:
             self.model.add(BatchNormalization())
         self.model.add(MaxPooling2D(pool_size=(2, 2)))
         self.model.add(GlobalAveragePooling2D())
-        self.model.add(Dense(units=256, activation='relu'))
+        self.model.add(Dense(units=256, activation="relu"))
         self.model.add(Dropout(self.DROPOUT_RATE))
-        self.model.add(Dense(units=1, activation='sigmoid'))
+        self.model.add(Dense(units=1, activation="sigmoid"))
 
     def compile_model(self):
         optimizer = Adam(learning_rate=self.LEARNING_RATE)
-        self.model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+        self.model.compile(optimizer=optimizer, loss="binary_crossentropy", metrics=["accuracy"])
 
     def save_model(self, filepath=None):
         if filepath is None:
@@ -118,12 +128,13 @@ class CNNImageClassifier:
             self.model.save(filepath)
             if self.class_names:
                 import json
-                class_names_path = filepath.rsplit('.', 1)[0] + '_classes.json'
-                with open(class_names_path, 'w') as f:
+
+                class_names_path = filepath.rsplit(".", 1)[0] + "_classes.json"
+                with open(class_names_path, "w") as f:
                     json.dump(self.class_names, f)
         except:
             pass
-    
+
     def load_model(self, filepath=None):
         if filepath is None:
             filepath = self.model_best_path
@@ -132,15 +143,18 @@ class CNNImageClassifier:
         try:
             self.model = load_model(filepath)
             import json
-            class_names_path = filepath.rsplit('.', 1)[0] + '_classes.json'
+
+            class_names_path = filepath.rsplit(".", 1)[0] + "_classes.json"
             if os.path.exists(class_names_path):
-                with open(class_names_path, 'r') as f:
+                with open(class_names_path, "r") as f:
                     self.class_names = json.load(f)
             else:
                 if self.source:
                     train_folder = os.path.join(os.path.dirname(__file__), self.source)
                     if os.path.exists(train_folder) and os.path.isdir(train_folder):
-                        subdirs = sorted([d for d in os.listdir(train_folder) if os.path.isdir(os.path.join(train_folder, d))])
+                        subdirs = sorted(
+                            [d for d in os.listdir(train_folder) if os.path.isdir(os.path.join(train_folder, d))]
+                        )
                         if len(subdirs) == 2:
                             self.class_names = subdirs
             return True
@@ -188,17 +202,15 @@ class CNNImageClassifier:
         self.y_test = y_val
 
     def split_data_80_20(self, X, y):
-        X_train, X_val, y_train, y_val = train_test_split(
-            X, y, test_size=0.20, random_state=self.RANDOM_STATE
-        )
+        X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.20, random_state=self.RANDOM_STATE)
         return X_train, X_val, y_train, y_val
 
     def normalize_images(self):
         if self.X_train is None:
             return
-        self.X_train = self.X_train.astype('float32') * self.RESCALE_FACTOR
-        self.X_val = self.X_val.astype('float32') * self.RESCALE_FACTOR
-        self.X_test = self.X_test.astype('float32') * self.RESCALE_FACTOR
+        self.X_train = self.X_train.astype("float32") * self.RESCALE_FACTOR
+        self.X_val = self.X_val.astype("float32") * self.RESCALE_FACTOR
+        self.X_test = self.X_test.astype("float32") * self.RESCALE_FACTOR
 
     def train(self, epochs=None, batch_size=None):
         if epochs is None:
@@ -211,10 +223,7 @@ class CNNImageClassifier:
         if self.USE_EARLY_STOPPING:
             if self.model_best_path:
                 model_checkpoint = ModelCheckpoint(
-                    filepath=self.model_best_path,
-                    monitor=self.EARLY_STOPPING_MONITOR,
-                    save_best_only=True,
-                    verbose=1
+                    filepath=self.model_best_path, monitor=self.EARLY_STOPPING_MONITOR, save_best_only=True, verbose=1
                 )
                 callbacks.append(model_checkpoint)
             early_stopping = EarlyStopping(
@@ -222,24 +231,21 @@ class CNNImageClassifier:
                 patience=self.EARLY_STOPPING_PATIENCE,
                 min_delta=self.EARLY_STOPPING_MIN_DELTA,
                 restore_best_weights=True,
-                verbose=1
+                verbose=1,
             )
             callbacks.append(early_stopping)
             reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
-                monitor=self.EARLY_STOPPING_MONITOR,
-                factor=0.5,
-                patience=3,
-                min_lr=1e-6,
-                verbose=1
+                monitor=self.EARLY_STOPPING_MONITOR, factor=0.5, patience=3, min_lr=1e-6, verbose=1
             )
             callbacks.append(reduce_lr)
         self.history = self.model.fit(
-            self.X_train, self.y_train,
+            self.X_train,
+            self.y_train,
             epochs=epochs,
             batch_size=batch_size,
             validation_data=(self.X_val, self.y_val),
             callbacks=callbacks,
-            verbose=1
+            verbose=1,
         )
 
     def test(self):
@@ -249,14 +255,14 @@ class CNNImageClassifier:
         loss = results[0]
         accuracy = results[1]
         return loss, accuracy
-    
+
     def _preprocess_image(self, image_path):
         img = load_img(image_path, target_size=self.IMG_SIZE)
         img_array = img_to_array(img)
-        img_normalized = img_array.astype('float32') * self.RESCALE_FACTOR
+        img_normalized = img_array.astype("float32") * self.RESCALE_FACTOR
         img_batch = np.expand_dims(img_normalized, axis=0)
         return img_batch
-    
+
     def _interpret_prediction(self, prediction):
         class_name = self.class_names[1] if prediction > self.PREDICTION_THRESHOLD else self.class_names[0]
         confidence = prediction if prediction > self.PREDICTION_THRESHOLD else 1 - prediction
@@ -272,23 +278,17 @@ class CNNImageClassifier:
             img_batch = self._preprocess_image(image_path)
             prediction = self.model.predict(img_batch, verbose=0)[0][0]
             class_name, confidence, is_uncertain = self._interpret_prediction(prediction)
-            return {
-                'image': image_path,
-                'class': class_name,
-                'confidence': confidence,
-                'raw_prediction': prediction
-            }
+            return {"image": image_path, "class": class_name, "confidence": confidence, "raw_prediction": prediction}
         except Exception as e:
             return None
 
-    def predict_folder(self, folder_path, output_csv='result.csv'):
+    def predict_folder(self, folder_path, output_csv="result.csv"):
         if self.model is None:
             return None
         if self.class_names is None:
             return None
         results = []
-        image_files = [f for f in os.listdir(folder_path) 
-                       if f.lower().endswith(self.SUPPORTED_IMAGE_EXTENSIONS)]
+        image_files = [f for f in os.listdir(folder_path) if f.lower().endswith(self.SUPPORTED_IMAGE_EXTENSIONS)]
         if not image_files:
             return None
         for idx, img_file in enumerate(image_files, 1):
@@ -297,17 +297,9 @@ class CNNImageClassifier:
                 img_batch = self._preprocess_image(img_path)
                 prediction = self.model.predict(img_batch, verbose=0)[0][0]
                 class_name, probability, _ = self._interpret_prediction(prediction)
-                results.append({
-                    'path': img_path,
-                    'pred': class_name,
-                    'prob': probability
-                })
+                results.append({"path": img_path, "pred": class_name, "prob": probability})
             except Exception as e:
-                results.append({
-                    'path': img_path,
-                    'pred': 'ERROR',
-                    'prob': 0.0
-                })
+                results.append({"path": img_path, "pred": "ERROR", "prob": 0.0})
         return results
 
     def run_pipeline(self, X_train, y_train, X_val, y_val, epochs=None, batch_size=None):
@@ -336,7 +328,7 @@ class CNNImageClassifier:
             return
         self.class_names = sorted(class_labels.keys())
         X_train, X_val, y_train, y_val = self.split_data_80_20(images, labels)
-        y_train = y_train.astype('float32')
-        y_val = y_val.astype('float32')
+        y_train = y_train.astype("float32")
+        y_val = y_val.astype("float32")
         self.run_pipeline(X_train, y_train, X_val, y_val)
         self.save_model()
