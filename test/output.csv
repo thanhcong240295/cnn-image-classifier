@@ -1,0 +1,4 @@
+path,pred,prob
+test\cnn-image-classifier-test.png,urban,0.7648978
+test\cnn-image-classifier-test1.png,urban,0.9343296
+test\cnn-image-classifier-test2.jpg,rural,0.5743923

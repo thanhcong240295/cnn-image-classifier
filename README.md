@@ -1,9 +1,27 @@
-# CNN Image Classifier - Rural vs Urban
+# CNN Image Classifier
 
-Binary image classification model using Convolutional Neural Networks (CNN) to classify images as either Rural or Urban.
+Binary image classification model using Convolutional Neural Networks (CNN) with automatic class label detection from directory structure.
+
+## Project Structure
+
+```
+image-classifier/
+├── main.py                 # Entry point - orchestrates training/prediction
+├── classifier.py           # Core CNN classifier class
+├── visualization.py        # Plotting and reporting functions
+├── utils.py               # Utility functions (argument validation, CSV export)
+├── README.md              # Documentation
+├── dataset/               # Training data (2 subdirectories)
+├── model/                 # Saved models
+└── result/                # Visualizations and outputs
+```
 
 ## Features
 
+- **Modular Architecture**: Organized into separate modules for maintainability
+- **Dynamic Class Detection**: Automatically detects class labels from directory names (requires exactly 2 subdirectories)
+- **GPU/CPU Selection**: Optional GPU acceleration with automatic CPU fallback
+- **Flexible Parameters**: Command-line arguments for source directory and model path
 - **Data Augmentation**: RandomFlip (horizontal), RandomRotation, RandomZoom (reduced augmentation for better generalization)
 - **Model Architecture**: Sequential CNN with Conv2D, BatchNormalization, MaxPooling2D, GlobalAveragePooling2D, and Dropout layers
 - **Class Balancing**: Automatic class weight balancing for imbalanced datasets
@@ -39,21 +57,61 @@ pip install numpy matplotlib scikit-learn pillow tensorflow keras
 
 ## Dataset Structure
 
+**Important**: The source directory must contain exactly 2 subdirectories for binary classification. Class labels are automatically detected from directory names.
+
 ```
-du_lieu_goc/
-├── rural/
+data/
+├── class_1/
 │   ├── image1.jpg
 │   ├── image2.png
 │   └── ...
-└── urban/
+└── class_2/
     ├── image1.jpg
     ├── image2.png
     └── ...
 ```
 
+Example:
+```
+dataset/
+├── rural/
+│   └── ...
+└── urban/
+    └── ...
+```
+
+## Module Descriptions
+
+### `classifier.py`
+Core CNN classifier class containing:
+- Model architecture (build, compile, train, test)
+- Image loading and preprocessing
+- Prediction methods (single image, batch folder)
+- Device configuration (GPU/CPU)
+
+### `visualization.py`
+Visualization and reporting functions:
+- `plot_training_history()` - Training/validation loss and accuracy curves
+- `plot_confusion_matrix()` - Classification confusion matrix
+- `plot_prediction_distribution()` - Distribution of prediction probabilities
+- `plot_roc_curve()` - ROC curve with AUC score
+- `generate_report()` - Comprehensive metrics report
+
+### `utils.py`
+Utility functions:
+- `validate_arguments()` - Parse and validate command-line arguments
+- `save_predictions_to_csv()` - Export predictions to CSV
+
+### `main.py`
+Entry point that:
+- Parses command-line arguments
+- Creates classifier instance
+- Orchestrates training or prediction
+- Generates visualizations and reports
+
 ## Configuration
 
-Key parameters in `CNNImageClassifier` class:
+Key parameters in `CNNImageClassifier` class (in `classifier.py`):
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -70,17 +128,35 @@ Key parameters in `CNNImageClassifier` class:
 
 ## Usage
 
+### Command-Line Arguments
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `--source` | Yes | Path to source directory containing 2 class subdirectories |
+| `--model` | Yes | Path to save model (e.g., `model/classifier.keras`) |
+| `--gpu` | No | Enable GPU acceleration (default: enabled) |
+| `--cpu` | No | Force CPU-only mode |
+| `--load` | No | Load existing model instead of training |
+
+**Note**: The best model checkpoint is automatically saved with `_best` suffix (e.g., `model/classifier_best.keras`)
+
 ### 1. Train Model
 
 ```bash
-python cnn-image-classifier.py
+# Train with GPU (default)
+python main.py --source dataset --model model/classifier.keras
+
+# Train with CPU only
+python main.py --cpu --source dataset --model model/classifier.keras
 ```
 
 This will:
-- Load images from `du_lieu_goc/` folder
+- Validate source directory has exactly 2 subdirectories
+- Automatically detect class labels from directory names
 - Split data 80/20 (train/validation)
 - Train the CNN model
-- Save model to `model/cnn_image_classifier.keras`
+- Save final model to `model/classifier.keras`
+- Save best checkpoint to `model/classifier_best.keras`
 - Generate visualizations in `result/` folder
 - Display evaluation metrics
 
@@ -88,20 +164,20 @@ This will:
 
 ```bash
 # Train and predict
-python cnn-image-classifier.py path/to/image.jpg
+python main.py --source dataset --model model/classifier.keras path/to/image.jpg
 
 # Load existing model and predict
-python cnn-image-classifier.py --load path/to/image.jpg
+python main.py --source dataset --model model/classifier.keras --load path/to/image.jpg
 ```
 
 ### 3. Batch Folder Prediction
 
 ```bash
 # Train and predict folder
-python cnn-image-classifier.py path/to/folder/
+python main.py --source dataset --model model/classifier.keras path/to/folder/
 
 # Load existing model and predict folder
-python cnn-image-classifier.py --load path/to/folder/ output.csv
+python main.py --source dataset --model model/classifier.keras --load path/to/folder/ output.csv
 ```
 
 ## Model Architecture
@@ -136,8 +212,8 @@ Input (240x240x3)
 ## Output Files
 
 ### Model
-- `model/cnn_image_classifier.keras` - Final trained model
-- `model/cnn_image_classifier_best.keras` - Best model checkpoint (based on val_loss)
+- `<model_path>` - Final trained model (specified via `--model` argument)
+- `<model_path>_best` - Best model checkpoint (e.g., `model/classifier_best.keras`)
 
 ### Visualizations (in `result/` folder)
 - `training_history.png` - Loss and accuracy curves
@@ -177,6 +253,11 @@ ROC-AUC:   0.9321
 ```
 
 ## Troubleshooting
+
+### Validation Errors
+- **Source directory must contain exactly 2 subdirectories**: Ensure your dataset has exactly 2 class folders for binary classification
+- **Model path must end with .keras or .h5**: Use supported model file extensions
+- **Source directory not found**: Verify the path specified in `--source` exists
 
 ### TensorFlow Compatibility
 - Use Python 3.9.6 for full TensorFlow 2.20.0 support
